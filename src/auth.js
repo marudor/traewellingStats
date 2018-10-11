@@ -58,14 +58,6 @@ export default async function authorize() {
     .then(token => (oauth2Client.credentials = JSON.parse(token)))
     .catch(() => getNewToken(oauth2Client));
 
-  fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) {
-      getNewToken(oauth2Client);
-    } else {
-      oauth2Client.credentials = JSON.parse(token);
-    }
-  });
-
   google.options({ auth: oauth2Client });
 
   return oauth2Client;
