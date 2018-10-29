@@ -5,7 +5,7 @@ module.exports = {
       '@babel/preset-env',
       {
         targets: {
-          node: '8.7',
+          node: '10.12',
         },
         modules: 'commonjs',
         useBuiltIns: 'entry',
@@ -13,12 +13,6 @@ module.exports = {
         debug: false,
       },
     ],
-    [
-      '@babel/preset-stage-1',
-      {
-        loose: true,
-        useBuiltIns: true,
-      },
-    ],
+    'babel-preset-joblift',
   ],
 };

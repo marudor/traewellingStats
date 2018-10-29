@@ -1,10 +1,13 @@
 // @flow
-import 'moment/locale/de';
+import { format, getTime, parse } from 'date-fns';
 import { google } from 'googleapis';
+import { orderBy } from 'lodash';
 import authorize from './auth';
 import csvParse from 'csv-parse/lib/sync';
+import deLocale from 'date-fns/locale/de';
 import fs from 'fs-extra';
-import moment from 'moment';
+
+const locale = { locale: deLocale };
 
 // eslint-disable-next-line no-sync
 const spreadsheetId = fs.readFileSync('spreadsheetId', 'utf8').trim();
@@ -57,15 +60,13 @@ async function parseCSV(path: string): Promise<Trip[]> {
 
 function transformForGoogle(data: Trip[]) {
   return data.reduce((acc, t) => {
-    const date = moment(t.Abfahrtszeit);
-
-    const title = date.format('MMMM YY');
+    const title = format(t.Abfahrtszeit, 'MMMM yy', locale);
 
     if (!acc[title]) {
       acc[title] = [];
     }
     acc[title].push([
-      date.format('DD.MM.YYYY'),
+      format(t.Abfahrtszeit, 'dd.MM.yyyy', locale),
       t.Abfahrtsort,
       t.Ankunftsort,
       t.Kilometer.toFixed(2).replace('.', ','),
@@ -222,6 +223,40 @@ async function fillSheet(rawSheet, data, title: string) {
   );
 }
 
+async function sortSheets() {
+  const { sheets } = await getSheetInfo();
+  const sortedSheets = orderBy(sheets, s => getTime(parse(s.properties.title, 'MMMM yy', 0, locale)), 'desc');
+
+  for (let i = 0; i < sortedSheets.length; i += 1) {
+    sortedSheets[i].properties.index = i;
+  }
+  await new Promise((resolve, reject) =>
+    gsheets.spreadsheets.batchUpdate(
+      {
+        spreadsheetId,
+        resource: {
+          requests: sortedSheets.map(s => ({
+            updateSheetProperties: {
+              properties: {
+                index: s.properties.index,
+                sheetId: s.properties.sheetId,
+              },
+              fields: 'index',
+            },
+          })),
+        },
+      },
+      e => {
+        if (e) {
+          reject(e);
+        } else {
+          resolve();
+        }
+      }
+    )
+  );
+}
+
 async function doStuff(path: string) {
   const data = await parseCSV(path);
 
@@ -233,15 +268,17 @@ async function doStuff(path: string) {
 
   Object.keys(reducedData)
     .sort((a, b) => {
-      const dateA = moment(a, 'MMMM YY');
-      const dateB = moment(b, 'MMMM YY');
+      const dateA = parse(a, 'MMMM yy', 0, locale);
+      const dateB = parse(b, 'MMMM yy', 0, locale);
 
-      return dateA.unix() > dateB.unix() ? 1 : -1;
+      return dateA > dateB ? 1 : -1;
     })
     .reduce(async (p, title) => {
       await p;
       await fillSheet(sheets.find(sheet => sheet.properties.title === title), reducedData[title], title);
     }, Promise.resolve());
+
+  await sortSheets();
 }
 
 const filePath = process.argv[2];
