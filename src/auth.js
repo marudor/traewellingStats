@@ -1,8 +1,8 @@
 // @flow
 /* eslint no-console: 0 */
+import { promises as fs } from 'fs';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import fs from 'fs-extra';
 import readline from 'readline';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
@@ -47,14 +47,14 @@ function getNewToken(oauth2Client) {
 }
 
 export default async function authorize() {
-  const credentials = JSON.parse(await fs.readFile('client_id.json'));
+  const credentials = JSON.parse(await fs.readFile('client_id.json', 'utf8'));
   const clientSecret = credentials.installed.client_secret;
   const clientId = credentials.installed.client_id;
   const redirectUrl = credentials.installed.redirect_uris[0];
   const oauth2Client = new OAuth2Client(clientId, clientSecret, redirectUrl);
 
   await fs
-    .readFile(TOKEN_PATH)
+    .readFile(TOKEN_PATH, 'utf8')
     .then(token => (oauth2Client.credentials = JSON.parse(token)))
     .catch(() => getNewToken(oauth2Client));
 

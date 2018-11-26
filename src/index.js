@@ -1,32 +1,32 @@
 // @flow
 import { format, getTime, parse } from 'date-fns';
+import { promises as fs, readFileSync } from 'fs';
 import { google } from 'googleapis';
 import { orderBy } from 'lodash';
 import authorize from './auth';
 import csvParse from 'csv-parse/lib/sync';
 import deLocale from 'date-fns/locale/de';
-import fs from 'fs-extra';
 
 const locale = { locale: deLocale };
 
 // eslint-disable-next-line no-sync
-const spreadsheetId = fs.readFileSync('spreadsheetId', 'utf8').trim();
+const spreadsheetId = readFileSync('spreadsheetId', 'utf8').trim();
 
 const gsheets = google.sheets('v4');
 
 type Trip = {
-  ['Status-ID']: number,
+  ['Status-ID']: string,
   Zugart: string,
-  Zugnummer: number,
+  Zugnummer: string,
   Abfahrtsort: string,
   Abfahrtskoordinaten: string,
-  Abfahrtszeit: Date,
+  Abfahrtszeit: string,
   Ankunftsort: string,
   Ankunftskoordinaten: string,
-  Ankunftszeit: Date,
+  Ankunftszeit: string,
   Reisezeit: string,
-  Kilometer: number,
-  Punkte: number,
+  Kilometer: string,
+  Punkte: string,
   Status?: string,
   Zwischenhalte?: string,
 };
@@ -46,15 +46,13 @@ function sanitize(rawCsv: string) {
 }
 
 async function parseCSV(path: string): Promise<Trip[]> {
-  const rawCsv = await fs.readFile(path, 'utf8');
+  const rawCsv: string = await fs.readFile(path, 'utf8');
   const csv = sanitize(rawCsv);
 
   return csvParse(csv, {
     delimiter: '\t',
     relax_column_count: true,
     columns: true,
-    auto_parse: true,
-    auto_parse_date: true,
   });
 }
 
@@ -69,7 +67,9 @@ function transformForGoogle(data: Trip[]) {
       format(t.Abfahrtszeit, 'dd.MM.yyyy', locale),
       t.Abfahrtsort,
       t.Ankunftsort,
-      t.Kilometer.toFixed(2).replace('.', ','),
+      Number.parseFloat(t.Kilometer)
+        .toFixed(2)
+        .replace('.', ','),
     ]);
 
     return acc;

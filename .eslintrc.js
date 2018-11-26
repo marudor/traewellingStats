@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ['joblift/base', 'joblift/2space', 'joblift/flowtype'],
+  extends: ['joblift/node'],
   env: {
     es6: true,
     node: true,

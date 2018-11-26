@@ -9,7 +9,7 @@ module.exports = {
         },
         modules: 'commonjs',
         useBuiltIns: 'entry',
-        loose: true,
+        loose: false,
         debug: false,
       },
     ],
