@@ -70,6 +70,7 @@ function transformForGoogle(data: Trip[]) {
       Number.parseFloat(t.Kilometer)
         .toFixed(2)
         .replace('.', ','),
+      t.Reisezeit,
     ]);
 
     return acc;
@@ -198,16 +199,20 @@ async function fillSheet(rawSheet, data, title: string) {
           valueInputOption: 'USER_ENTERED',
           data: [
             {
-              range: `${sheetId}!A1:D1`,
-              values: [['Datum', 'Start', 'Ende', 'Distanz']],
+              range: `${sheetId}!A1:G1`,
+              values: [['Datum', 'Start', 'Ende', 'Distanz', 'Dauer', 'Summe Distanz', 'Summe Dauer']],
             },
             {
-              range: `${sheetId}!A2:D${data.length + 1}`,
+              range: `${sheetId}!A2:E${data.length + 1}`,
               values: data,
             },
             {
               range: `${sheetId}!F2`,
               values: [[`=sum(D2:D${data.length + 1})`]],
+            },
+            {
+              range: `${sheetId}!G2`,
+              values: [[`=sum(E2:E${data.length + 1})`]],
             },
           ],
         },
